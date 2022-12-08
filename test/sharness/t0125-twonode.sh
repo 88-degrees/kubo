@@ -66,18 +66,18 @@ run_advanced_test() {
 
   test_expect_success "node0 data transferred looks correct" '
     ipfsi 0 bitswap stat > stat0 &&
-    grep "blocks sent: 126" stat0 > /dev/null &&
-    grep "blocks received: 5" stat0 > /dev/null &&
-    grep "data sent: 228113" stat0 > /dev/null &&
-    grep "data received: 1000256" stat0 > /dev/null
-  '
+    test_should_contain "blocks sent: 126" stat0 &&
+    test_should_contain "blocks received: 5" stat0 &&
+    test_should_contain "data sent: 228113" stat0 &&
+    test_should_contain "data received: 1000256" stat0
+'
 
   test_expect_success "node1 data transferred looks correct" '
     ipfsi 1 bitswap stat > stat1 &&
-    grep "blocks received: 126" stat1 > /dev/null &&
-    grep "blocks sent: 5" stat1 > /dev/null &&
-    grep "data received: 228113" stat1 > /dev/null &&
-    grep "data sent: 1000256" stat1 > /dev/null
+    test_should_contain "blocks received: 126" stat1 &&
+    test_should_contain "blocks sent: 5" stat1 &&
+    test_should_contain "data received: 228113" stat1 &&
+    test_should_contain "data sent: 1000256" stat1
   '
 
   test_expect_success "shut down nodes" '
@@ -87,6 +87,11 @@ run_advanced_test() {
 
 test_expect_success "set up tcp testbed" '
   iptb testbed create -type localipfs -count 2 -force -init
+'
+
+test_expect_success "disable routing, use direct peering" '
+  iptb run -- ipfs config Routing.Type none &&
+  iptb run -- ipfs config --json Bootstrap "[]"
 '
 
 addrs='"[\"/ip4/127.0.0.1/tcp/0\", \"/ip4/127.0.0.1/udp/0/quic\"]"'
@@ -100,6 +105,7 @@ echo "Testing TCP"
 test_expect_success "use TCP only" '
   iptb run -- ipfs config --json Swarm.Transports.Network.QUIC false &&
   iptb run -- ipfs config --json Swarm.Transports.Network.Relay false &&
+  iptb run -- ipfs config --json Swarm.Transports.Network.WebTransport false &&
   iptb run -- ipfs config --json Swarm.Transports.Network.Websocket false
 '
 run_advanced_test
@@ -132,5 +138,8 @@ test_expect_success "use QUIC only" '
 '
 
 run_advanced_test
+
+# TODO: test WebTransport
+# run_advanced_test with WebTransport-only Addresses.Swarm
 
 test_done
